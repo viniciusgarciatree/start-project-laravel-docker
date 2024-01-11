@@ -10,7 +10,7 @@ build:
 	docker build --progress plain --tag $(IMAGE_NAME):$(APP_VERSION) "."
 
 start:
-	docker run --name $(CONTAINER_NAME) -p 80:80 -v ./src:/var/www --network net-db $(IMAGE_NAME):$(APP_VERSION) &
+	docker run --name $(CONTAINER_NAME) -p 80:80 -p 5173:5173 -v /var/www/garcia/management/src:/var/www --network net-db $(IMAGE_NAME):$(APP_VERSION) &
 
 test:
 	docker run --rm $(IMAGE_NAME):$(APP_VERSION) php -v | grep 8.3.1
@@ -18,9 +18,9 @@ test:
 destroy:
 	docker image rm $(IMAGE_NAME):$(APP_VERSION)
 
-laravel-install:
+install:
 	docker exec -it $(CONTAINER_NAME) composer install
-	docker exec -it $(CONTAINER_NAME) chmod 755 -R .
+	docker exec -it $(CONTAINER_NAME) chmod 775 -R .
 	docker exec -it $(CONTAINER_NAME) npm install
 	docker exec -it $(CONTAINER_NAME) cp .env.example .env
 	docker exec -it $(CONTAINER_NAME) php artisan key:generate
@@ -33,10 +33,14 @@ migrate:
 	docker exec -it $(CONTAINER_NAME) php artisan migrate
 
 permisson:
-	docker exec -it management chmod 775 -R .
+	docker exec -it $(CONTAINER_NAME) chown -R www-data:www-data .
+	docker exec -it $(CONTAINER_NAME) chmod 775 -R .
 
 bash:
 	docker exec -it $(CONTAINER_NAME) /bin/bash
 
 optimize:
 	docker exec -it $(CONTAINER_NAME) php artisan optimize
+
+log:
+	docker logs -f --tail 100 $(CONTAINER_NAME)
